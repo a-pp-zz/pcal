@@ -1,0 +1,29 @@
+{
+    "name": "appzz/productivity-calendar",
+    "description": "Russian Productivity Calendar in ical format",
+    "type": "library",
+    "version": "1.0.0",
+    "keywords": [
+        "ical",
+        "productivity calendar"
+    ],
+    "homepage": "https://www.bitbucket.org/a-pp-zz/p-calendar.git",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "CoolSwitcher",
+            "email": "ds@appzz.tech",
+            "role": "lead"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3",
+        "appzz/arr": "dev-master",
+        "appzz/curl-client": "dev-master",
+        "eluceo/ical": "dev-master",
+        "sunra/php-simple-html-dom-parser": "1.5.1"
+    },
+    "autoload": {
+        "psr-4": {"AppZz\\Http\\": "src/"}
+    }
+}
