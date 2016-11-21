@@ -89,6 +89,7 @@ class ProductivityCalendar {
 		} else {
 			header('Content-Type: text/calendar; charset=utf-8');
 			header('Content-Disposition: attachment; filename="'.strtolower($prodid).'.ics"');			
+			echo $output;
 			exit;
 		}
 	}
