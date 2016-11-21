@@ -6,8 +6,10 @@ use \Sunra\PhpSimple\HtmlDomParser;
 class ProductivityCalendar {
 
 	private $_year = 2016;
-	private $_url;
 	private $_dom;
+	private $_url;
+	private $_hash;
+	private $_headers;
 	private $_months = [
 		1  => 'Января',
 		2  => 'Февраля',
@@ -25,9 +27,11 @@ class ProductivityCalendar {
 
 	public function __construct ($year = 2016)
 	{
-		$this->_url = sprintf ('http://calendar.yoip.ru/work/%04d-proizvodstvennyj-calendar.html', $year);
+		$this->_year = $year;
+		$this->_url = sprintf ('http://calendar.yoip.ru/work/%04d-proizvodstvennyj-calendar.html', $this->_year);
 		$content = $this->_get_content();
 		if ($content) {
+			$this->_hash = sha1 ($content);
 			$this->_dom = HtmlDomParser::str_get_html($content);
 		}
 	}
@@ -87,7 +91,15 @@ class ProductivityCalendar {
 			file_put_contents($file, $output);
 			return TRUE;	
 		} else {
+			$_date = Arr::get($this->_headers, 'Date');
+			$_expires = Arr::get($this->_headers, 'Expires');
 			header('Content-Type: text/calendar; charset=utf-8');
+			header("ETag: \"{$this->_hash}\"", TRUE);
+			header ('Cache-Control: max-age=0');
+			if ($_date)
+				header ('Date: ' . $_date);
+			if ($_expires)
+				header ('Expires: ' . $_expires);
 			header('Content-Disposition: attachment; filename="'.strtolower($prodid).'.ics"');			
 			echo $output;
 			exit;
@@ -96,14 +108,12 @@ class ProductivityCalendar {
 
 	private function _get_content () 
 	{
-		#$content = file_get_contents('out.html');
-		#return $content;
 		$request = CurlClient::get($this->_url);
 		$request->agent('chrome');
 		$request->accept('html', 'gzip');
 		$response = $request->send();
-		if ($response === 200) {
-			file_put_contents('out.html', $content);			
+		if ($response === 200) {			
+			$this->_headers = $request->get_headers();
 			return $request->get_body();
 		}
 		return FALSE;
