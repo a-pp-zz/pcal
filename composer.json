@@ -20,7 +20,7 @@
         "php": ">=5.3.3",
         "appzz/arr": "dev-master",
         "appzz/curl-client": "dev-master",
-        "eluceo/ical": "dev-master",
+        "eluceo/ical": "0.11.2",
         "sunra/php-simple-html-dom-parser": "1.5.1"
     },
     "autoload": {
