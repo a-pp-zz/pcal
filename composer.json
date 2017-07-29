@@ -8,20 +8,20 @@
         "productivity calendar"
     ],
     "homepage": "https://www.bitbucket.org/a-pp-zz/p-calendar.git",
-    "license": "Apache-2.0",
+    "license": "MIT",
     "authors": [
         {
             "name": "CoolSwitcher",
-            "email": "ds@appzz.tech",
+            "email": "ds@appzz.pw",
             "role": "lead"
         }
     ],
     "require": {
         "php": ">=5.3.3",
-        "appzz/arr": "dev-master",
-        "appzz/curl-client": "dev-master",
+        "appzz/arr": "1.*",
+        "appzz/curl-client": "2.*",
         "eluceo/ical": "0.11.2",
-        "sunra/php-simple-html-dom-parser": "1.5.1"
+        "sunra/php-simple-html-dom-parser": "1.*"
     },
     "autoload": {
         "psr-4": {"AppZz\\Http\\": "src/"}
