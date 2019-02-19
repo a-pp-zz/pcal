@@ -1,8 +1,9 @@
 <?php
 namespace AppZz\Http;
-use \AppZz\Http\CurlClient;
-use \AppZz\Helpers\Arr;
-use \Sunra\PhpSimple\HtmlDomParser;
+use AppZz\Http\CurlClient;
+use AppZz\Helpers\Arr;
+use AppZz\Helpers\HtmlDomParser;
+
 class ProductivityCalendar {
 
 	private $_year = 2016;
@@ -45,7 +46,7 @@ class ProductivityCalendar {
 
 		$diff1 = array_diff_key($main, $long);
 		$diff2 = array_diff_key($calend, $long);
-		$full  = array_merge ($long, $diff1, $diff2, $main); 
+		$full  = array_merge ($long, $diff1, $diff2, $main);
 		$ret = [];
 		foreach ($full as $k=>$v) {
 			$description = Arr::get($calend, $k, '');
@@ -89,7 +90,7 @@ class ProductivityCalendar {
 
 		if ($file) {
 			file_put_contents($file, $output);
-			return TRUE;	
+			return TRUE;
 		} else {
 			$_date = Arr::get($this->_headers, 'Date');
 			$_expires = Arr::get($this->_headers, 'Expires');
@@ -100,30 +101,30 @@ class ProductivityCalendar {
 				header ('Date: ' . $_date);
 			if ($_expires)
 				header ('Expires: ' . $_expires);
-			header('Content-Disposition: attachment; filename="'.strtolower($prodid).'.ics"');			
+			header('Content-Disposition: attachment; filename="'.strtolower($prodid).'.ics"');
 			echo $output;
 			exit;
 		}
 	}
 
-	private function _get_content () 
+	private function _get_content ()
 	{
 		$request = CurlClient::get($this->_url);
-		$request->agent('chrome');
+		$request->browser('chrome', 'mac');
 		$request->accept('html', 'gzip');
 		$response = $request->send();
-		if ($response === 200) {			
-			$this->_headers = $request->get_headers();
-			return $request->get_body();
+		if ($response->get_status() === 200) {
+			$this->_headers = $response->get_headers()->asArray();
+			return $response->get_body();
 		}
 		return FALSE;
 	}
 
-	private function _detect_date ($text) 
+	private function _detect_date ($text)
 	{
 		$months = '(' . implode ('|', $this->_months) . ')';
 		$regex  = '#(\d{1,2})\s'.$months.'\s?(\d{4})?#iu';
-		if (preg_match ($regex, $text, $matches)) {		
+		if (preg_match ($regex, $text, $matches)) {
 			$month = trim ($matches[2]);
 			$month = array_search($month, $this->_months);
 			if ( !$month)
@@ -135,7 +136,7 @@ class ProductivityCalendar {
 		return FALSE;
 	}
 
-	private function _detect_date_span ($text) 
+	private function _detect_date_span ($text)
 	{
 		$spans = explode ('/', $text);
 		$start = Arr::get($spans, 0);
@@ -146,30 +147,30 @@ class ProductivityCalendar {
 
 		$start = $this->_detect_date(trim($start));
 		$end = $this->_detect_date(trim($end));
-		
+
 		$m1 = (int) date ('n', strtotime($start));
 		$m2 = (int) date ('n', strtotime($end));
-			
+
 		if (($m1 === 12) AND ($m2 === 1)) {
 			$end = date ('Y-m-d', strtotime($end . ' +1 year'));
 		}
 
 		$current = $start;
 		$dates = [$current];
-		
+
 		while (strtotime($current) < strtotime ($end)) {
 			$current = date ('Y-m-d', strtotime ($current . ' +1 day'));
 			$dates[] = $current;
 		}
-		
-		return $dates;
-	}	
 
-	private function _format_date ($text) 
+		return $dates;
+	}
+
+	private function _format_date ($text)
 	{
 		$text = trim ($text);
 		$regex  = '#(\d{4})\-(\d{2})\-(\d{2})#iu';
-		if (preg_match ($regex, $text, $matches)) {	
+		if (preg_match ($regex, $text, $matches)) {
 			$month = sprintf ('%d', trim ($matches[2]));
 			$month = Arr::get($this->_months, $month);
 			if ( !$month)
@@ -178,7 +179,7 @@ class ProductivityCalendar {
 			return str_replace($matches[1] . '-' . $matches[2] . '-' . $matches[3], $date, $text);
 		}
 		return $text;
-	}	
+	}
 
 	public function _parse_calendar ()
 	{
@@ -190,14 +191,14 @@ class ProductivityCalendar {
 			$parts = explode ('.', $title);
 			$parts = array_map('trim', $parts);
 			if ($parts) {
-				$event_title = $this->_format_date($parts[1]);							
+				$event_title = $this->_format_date($parts[1]);
 				if ($event_title == 'Это выходной день' OR $event_title == 'Это праздничный день')
 					continue;
 				$date = $this->_detect_date($parts[0]);
 				if ( !$date)
 					continue;
 				$events[$date] = $event_title;
-			}						
+			}
 		}
 		return $events;
 	}
@@ -228,7 +229,7 @@ class ProductivityCalendar {
 			if ($dates) {
 				$title = $elm->next_sibling()->next_sibling()->plaintext;
 				foreach ($dates as $date)
-					$events[$date] = $title;				
+					$events[$date] = $title;
 				continue;
 			}
 		}
