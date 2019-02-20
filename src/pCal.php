@@ -37,6 +37,12 @@ class pCal {
 		12 => 'Декабря',
 	];
 
+	private $_events_bad_words = [
+		'Это выходной день',
+		'Это праздничный день',
+		'Это рабочий день'
+	];
+
 	const CALENDAR_URL = 'http://calendar.yoip.ru/work/%04d-proizvodstvennyj-calendar.html';
 
 	public function __construct ($year = 2016)
@@ -241,7 +247,7 @@ class pCal {
 			if ($parts) {
 				$event_title = $this->_format_date($parts[1]);
 
-				if ($event_title == 'Это выходной день' OR $event_title == 'Это праздничный день') {
+				if (in_array($event_title, $this->_events_bad_words)) {
 					continue;
 				}
 
