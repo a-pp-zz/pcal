@@ -3,20 +3,25 @@ namespace AppZz\Http;
 use AppZz\Http\CurlClient;
 use AppZz\Helpers\Arr;
 use AppZz\Helpers\HtmlDomParser;
+use Eluceo\iCal\Component\Event;
+use Eluceo\iCal\Component\Calendar;
+use DateTime;
 
 /**
  * Производственный календарь
  *
  * @author CoolSwitcher
  * @copyright yoip.ru
+ * @
  */
-class ProductivityCalendar {
+class pCal {
 
 	private $_year = 2016;
 	private $_dom;
 	private $_url;
 	private $_hash;
 	private $_headers;
+
 	private $_months = [
 		1  => 'Января',
 		2  => 'Февраля',
@@ -32,10 +37,12 @@ class ProductivityCalendar {
 		12 => 'Декабря',
 	];
 
+	const CALENDAR_URL = 'http://calendar.yoip.ru/work/%04d-proizvodstvennyj-calendar.html';
+
 	public function __construct ($year = 2016)
 	{
 		$this->_year = $year;
-		$this->_url = sprintf ('http://calendar.yoip.ru/work/%04d-proizvodstvennyj-calendar.html', $this->_year);
+		$this->_url = sprintf (pCal::CALENDAR_URL, $this->_year);
 
 		$content = $this->_get_content();
 
@@ -83,20 +90,21 @@ class ProductivityCalendar {
 
 	public function render ($events, $file = FALSE)
 	{
-		$prodid = 'Productivity-Calendar-' . $this->_year;
-		$vCalendar = new \Eluceo\iCal\Component\Calendar($prodid);
+		$prodid = 'pCal-' . $this->_year;
+		$vCalendar = new Calendar($prodid);
 
 		foreach ($events as $event) {
 			$date = Arr::get($event, 'date');
 			$description = Arr::get($event, 'description');
 			$title = Arr::get($event, 'title');
 
-			if ( !$title OR !$date)
+			if ( !$title OR !$date) {
 				continue;
+			}
 
-			$vEvent = new \Eluceo\iCal\Component\Event();
-			$vEvent->setDtStart(new \DateTime($date));
-			$vEvent->setDtEnd(new \DateTime($date));
+			$vEvent = new Event();
+			$vEvent->setDtStart(new DateTime($date));
+			$vEvent->setDtEnd(new DateTime($date));
 			$vEvent->setNoTime(true);
 			$vEvent->setSummary($title);
 			if ( !empty ($description))
