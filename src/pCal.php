@@ -20,7 +20,9 @@ class pCal {
 	private $_dom;
 	private $_url;
 	private $_hash;
-	private $_headers;
+	private $_events;
+	private $_output;
+	private $_prodid;
 
 	private $_months = [
 		1  => 'Января',
@@ -47,18 +49,74 @@ class pCal {
 
 	public function __construct ($year = 2016)
 	{
-		$this->_year = $year;
-		$this->_url = sprintf (pCal::CALENDAR_URL, $this->_year);
+		$this->_year   = $year;
+		$this->_prodid = 'pCal-' . $this->_year;
+		$this->_url    = sprintf (pCal::CALENDAR_URL, $this->_year);
 
 		$content = $this->_get_content();
 
 		if ($content) {
 			$this->_hash = sha1 ($content);
-			$this->_dom = HtmlDomParser::str_get_html($content);
+			$this->_dom  = HtmlDomParser::str_get_html($content);
+			$this->_get_events();
 		}
 	}
 
 	public function get_events ()
+	{
+		return $this->_events;
+	}
+
+	public function get_hash ()
+	{
+		return $this->_hash;
+	}
+
+	public function create ()
+	{
+		$vCalendar = new Calendar ($this->_prodid);
+
+		foreach ($this->_events as $event) {
+			$date = Arr::get($event, 'date');
+			$description = Arr::get($event, 'description');
+			$title = Arr::get($event, 'title');
+
+			if ( ! $title OR ! $date) {
+				continue;
+			}
+
+			$vEvent = new Event ();
+			$vEvent->setDtStart(new DateTime($date));
+			$vEvent->setDtEnd(new DateTime($date));
+			$vEvent->setNoTime(true);
+			$vEvent->setSummary($title);
+
+			if ( ! empty ($description)) {
+				$vEvent->setDescription($description);
+			}
+
+			$vCalendar->addComponent($vEvent);
+		}
+
+		return $vCalendar->render();
+	}
+
+	public function save ($file = FALSE)
+	{
+		if ( ! empty ($file)) {
+			return file_put_contents ($file, $this->create());
+		} else {
+			header ('Content-Type: text/calendar; charset=utf-8');
+			header ("ETag: \"{$this->_hash}\"", TRUE);
+			header ('Cache-Control: max-age=0');
+			header ('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+			header ('Content-Disposition: attachment; filename="'.strtolower($this->_prodid).'.ics"');
+			echo $this->create();
+			exit;
+		}
+	}
+
+	private function _get_events ()
 	{
 		if ( ! $this->_dom) {
 			return FALSE;
@@ -71,7 +129,7 @@ class pCal {
 		$diff1 = array_diff_key($main, $long);
 		$diff2 = array_diff_key($calend, $long);
 		$full  = array_merge ($long, $diff1, $diff2, $main);
-		$ret = [];
+		$this->_events = [];
 
 		foreach ($full as $k=>$v) {
 			$description = Arr::get ($calend, $k, '');
@@ -80,68 +138,18 @@ class pCal {
 				$description = '';
 			}
 
-			$ret[] = [
-				'date'=>$k,
-				'title'=>$v,
-				'description'=>$description
+			$this->_events[] = [
+				'date'        =>$k,
+				'title'       =>$v,
+				'description' =>$description
 			];
 		}
 
-		usort ($ret, function ($b, $a) {
+		usort ($this->_events, function ($b, $a) {
 			return (strtotime ($b['date']) > strtotime($a['date']));
 		});
 
-		return $ret;
-	}
-
-	public function render ($events, $file = FALSE)
-	{
-		$prodid = 'pCal-' . $this->_year;
-		$vCalendar = new Calendar($prodid);
-
-		foreach ($events as $event) {
-			$date = Arr::get($event, 'date');
-			$description = Arr::get($event, 'description');
-			$title = Arr::get($event, 'title');
-
-			if ( !$title OR !$date) {
-				continue;
-			}
-
-			$vEvent = new Event();
-			$vEvent->setDtStart(new DateTime($date));
-			$vEvent->setDtEnd(new DateTime($date));
-			$vEvent->setNoTime(true);
-			$vEvent->setSummary($title);
-			if ( !empty ($description))
-				$vEvent->setDescription($description);
-			$vCalendar->addComponent($vEvent);
-		}
-
-		$output = $vCalendar->render();
-
-		if ($file) {
-			file_put_contents($file, $output);
-			return TRUE;
-		} else {
-			$_date = Arr::get($this->_headers, 'Date');
-			$_expires = Arr::get($this->_headers, 'Expires');
-			header('Content-Type: text/calendar; charset=utf-8');
-			header("ETag: \"{$this->_hash}\"", TRUE);
-			header ('Cache-Control: max-age=0');
-
-			if ($_date) {
-				header ('Date: ' . $_date);
-			}
-
-			if ($_expires) {
-				header ('Expires: ' . $_expires);
-			}
-
-			header('Content-Disposition: attachment; filename="'.strtolower($prodid).'.ics"');
-			echo $output;
-			exit;
-		}
+		return $this->_events;
 	}
 
 	private function _get_content ()
@@ -152,7 +160,6 @@ class pCal {
 		$response = $request->send();
 
 		if ($response->get_status() === 200) {
-			$this->_headers = $response->get_headers()->asArray();
 			return $response->get_body();
 		}
 
